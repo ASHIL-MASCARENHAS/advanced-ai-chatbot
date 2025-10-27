@@ -12,7 +12,15 @@
     
     <!-- 3. Use Inter font -->
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-
+    
+    <!-- 
+      4. LOAD API KEY CONFIG (FOR LOCAL TESTING)
+      This file provides the key for localhost.
+      On Netlify, this will fail (404), but the app will 
+      get the key from the injected <meta> tag instead.
+    -->
+    <script src="config.js" defer></script>
+    
     <style>
         html {
             font-family: 'Inter', sans-serif;
@@ -182,20 +190,42 @@
 
         // --- Initialization Function ---
         function initializeApp() {
-            // Check if API key is loaded from config.js
-            if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY) {
+            // --- NEW DEPLOYMENT-FRIENDLY KEY CHECK ---
+            // This function now works for BOTH local and deployed.
+            
+            // 1. Try to get key from injected meta tag (for Netlify/Deployment)
+            const metaTag = document.querySelector('meta[name="gemini-api-key"]');
+            if (metaTag && metaTag.content && metaTag.content !== "${GEMINI_API_KEY}") {
+                API_KEY = metaTag.content;
+                console.log("Loaded API key from meta tag.");
+            } 
+            // 2. Fallback: Try to get key from config.js (for localhost)
+            else if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY && GEMINI_API_KEY !== "PASTE_YOUR_GEMINI_API_KEY_HERE") {
                 API_KEY = GEMINI_API_KEY;
-            } else {
+                console.log("Loaded API key from config.js.");
+            } 
+            // 3. If both fail, show an error.
+            else {
                 // Handle missing API key.
-                console.error("API Key not found. Please create config.js");
-                // Disable chat functionality
+                console.error("API Key not found. Looked for meta-tag (deploy) and config.js (local).");
                 sendBtn.disabled = true;
                 promptInput.disabled = true;
                 voiceBtn.disabled = true;
                 fileInput.disabled = true;
-                promptInput.placeholder = "API Key not configured. See config.example.js";
-                // Display error in chat
-                displayMessage('bot', 'Error: `GEMINI_API_KEY` not found. Please create a `config.js` file with your API key to use this app.', null, null, true);
+
+                let errorMsg = 'Error: API Key not configured. ';
+                if (metaTag && metaTag.content === "${GEMINI_API_KEY}") {
+                    errorMsg += 'The Netlify Environment Variable (GEMINI_API_KEY) is not set. Please set it and redeploy.';
+                } else if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+                    errorMsg += 'Please add your API key to config.js for local testing.';
+                } else if (metaTag) {
+                    errorMsg += 'Meta tag was found but empty. Check Netlify Environment Variable.';
+                } else {
+                    errorMsg += 'Please check deployment guide or config.example.js.';
+                }
+                
+                promptInput.placeholder = "API Key not configured.";
+                displayMessage('bot', errorMsg, null, null, true);
                 return; // Stop further execution if key is missing
             }
             
