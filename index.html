@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced AI Chatbot</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+    
+    <!-- 3. Use Inter font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    
+    <style>
+        html {
+            font-family: 'Inter', sans-serif;
+        }
+        @supports (font-variation-settings: normal) {
+            html {
+                font-family: 'Inter var', sans-serif;
+            }
+        }
+        
+        /* Custom scrollbar for chat window */
+        #chat-window::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 3px;
+        }
+        #chat-window::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Voice button recording pulse */
+        .recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } /* red-500 */
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Custom toggle switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #60a5fa; /* blue-400 */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #60a5fa; /* blue-400 */
+        }
+    </style>
+</head>
+<body class="h-full bg-gray-900 flex items-center justify-center p-4">
+    
+    <div class="bg-gray-800 w-full max-w-3xl h-full max-h-[800px] rounded-2xl shadow-2xl shadow-blue-900/20 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-sm">
+            <h1 class="text-2xl font-bold text-center text-gray-100">Advanced AI Chatbot</h1>
+        </header>
+
+        <!-- Settings Bar -->
+        <div class="flex flex-wrap gap-4 p-3 border-b border-gray-700 bg-gray-800 justify-center">
+            <!-- Google Search Toggle -->
+            <div class="flex items-center space-x-2">
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="search-toggle" id="search-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                    <label for="search-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+                <label for="search-toggle" class="text-sm font-medium text-gray-300">Enable Google Search</label>
+            </div>
+            <!-- TTS Toggle -->
+            <div class="flex items-center space-x-2">
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="tts-toggle" id="tts-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                    <label for="tts-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+                <label for="tts-toggle" class="text-sm font-medium text-gray-300">Enable Voice Response</label>
+            </div>
+        </div>
+
+        <!-- Chat Window -->
+        <main id="chat-window" class="flex-grow p-6 overflow-y-auto space-y-6">
+            <!-- Initial Bot Message -->
+            <div class="flex justify-start">
+                <div class="bg-gray-700 text-gray-100 p-4 rounded-lg rounded-bl-none max-w-lg shadow">
+                    <p>Hello! I'm your advanced AI assistant. You can ask me questions, upload images, or use your voice. How can I help you today?</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="bg-gray-900 p-4 border-t border-gray-700 shadow-inner">
+            <!-- File Preview Area -->
+            <div id="file-preview" class="hidden mb-2">
+                <div class="bg-blue-900/60 border border-blue-700 text-blue-200 text-sm rounded-lg p-3 flex items-center justify-between">
+                    <span id="file-preview-name" class="font-medium"></span>
+                    <button id="remove-file-btn" class="text-blue-200 hover:text-blue-100">
+                        <i class="ph ph-x text-lg font-bold"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Input Row -->
+            <div class="flex items-center space-x-3">
+                <!-- File Upload -->
+                <label for="file-input" class="cursor-pointer text-gray-400 hover:text-blue-400 transition-colors rounded-full p-2 hover:bg-gray-700">
+                    <i class="ph ph-paperclip text-2xl"></i>
+                    <input type="file" id="file-input" class="hidden">
+                </label>
+
+                <!-- Voice Input -->
+                <button id="voice-btn" class="text-gray-400 hover:text-blue-400 transition-colors rounded-full p-2 hover:bg-gray-700">
+                    <i id="voice-icon" class="ph ph-microphone text-2xl"></i>
+                </button>
+
+                <!-- Text Input -->
+                <input type="text" id="prompt-input" placeholder="Type your message or use voice..." class="flex-grow p-3 bg-gray-700 border border-gray-600 text-white placeholder:text-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
+
+                <!-- Send Button -->
+                <button id="send-btn" class="bg-blue-600 text-white rounded-lg p-3 hover:bg-blue-700 transition-colors shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-500">
+                    <i id="send-icon" class="ph ph-paper-plane-right text-2xl"></i>
+                    <div id="loading-spinner" class="spinner hidden"></div>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Audio Player (hidden) -->
+    <audio id="tts-audio" class="hidden"></audio>
+
+
+    <script>
+        // --- DOM Elements ---
+        const chatWindow = document.getElementById('chat-window');
+        const promptInput = document.getElementById('prompt-input');
+        const sendBtn = document.getElementById('send-btn');
+        const sendIcon = document.getElementById('send-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const fileInput = document.getElementById('file-input');
+        const filePreview = document.getElementById('file-preview');
+        const filePreviewName = document.getElementById('file-preview-name');
+        const removeFileBtn = document.getElementById('remove-file-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceIcon = document.getElementById('voice-icon');
+        const searchToggle = document.getElementById('search-toggle');
+        const ttsToggle = document.getElementById('tts-toggle');
+        const ttsAudio = document.getElementById('tts-audio');
+        
+        // --- API & State ---
+        // The API_KEY will be loaded from config.js, which is git-ignored.
+        // config.js should contain: const GEMINI_API_KEY = "YOUR_ACTUAL_API_KEY";
+        let API_KEY; 
+        
+        let API_URL_TEXT;
+        let API_URL_TTS;
+        
+        let chatHistory = []; // Stores the conversation for context
+        let uploadedFile = null; // Stores { base64, mimeType, name }
+        let isRecording = false;
+        let speechRecognition;
+
+        // --- Initialization Function ---
+        function initializeApp() {
+            // Check if API key is loaded from config.js
+            if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY) {
+                API_KEY = GEMINI_API_KEY;
+            } else {
+                // Handle missing API key.
+                console.error("API Key not found. Please create config.js");
+                // Disable chat functionality
+                sendBtn.disabled = true;
+                promptInput.disabled = true;
+                voiceBtn.disabled = true;
+                fileInput.disabled = true;
+                promptInput.placeholder = "API Key not configured. See config.example.js";
+                // Display error in chat
+                displayMessage('bot', 'Error: `GEMINI_API_KEY` not found. Please create a `config.js` file with your API key to use this app.', null, null, true);
+                return; // Stop further execution if key is missing
+            }
+            
+            // Set API URLs now that we have the key
+            API_URL_TEXT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+            API_URL_TTS = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${API_KEY}`;
+        }
+
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = true;
+            speechRecognition.lang = 'en-US';
+
+            speechRecognition.onstart = () => {
+                isRecording = true;
+                voiceIcon.classList.add('ph-fill', 'text-red-500');
+                voiceBtn.classList.add('recording');
+                promptInput.placeholder = "Listening...";
+                promptInput.value = ""; // Clear input on start
+            };
+
+            speechRecognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                promptInput.value = finalTranscript || interimTranscript;
+            };
+
+            speechRecognition.onend = () => {
+                isRecording = false;
+                voiceIcon.classList.remove('ph-fill', 'text-red-500');
+                voiceBtn.classList.remove('recording');
+                promptInput.placeholder = "Type your message or use voice...";
+                // Automatically send if voice input was final
+                if (promptInput.value.trim()) {
+                    handleSend();
+                }
+            };
+
+            speechRecognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                isRecording = false;
+                voiceIcon.classList.remove('ph-fill', 'text-red-500');
+                voiceBtn.classList.remove('recording');
+                promptInput.placeholder = "Voice recognition error. Try again.";
+            };
+        } else {
+            voiceBtn.disabled = true;
+            console.warn("Speech Recognition not supported in this browser.");
+        }
+
+        // --- Event Listeners ---
+        sendBtn.addEventListener('click', handleSend);
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+        removeFileBtn.addEventListener('click', removeFile);
+        voiceBtn.addEventListener('click', toggleVoiceRecording);
+
+        // --- Add DOMContentLoaded listener to run init ---
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // --- Core Functions ---
+
+        /**
+         * Toggles the voice recording state.
+         */
+        function toggleVoiceRecording() {
+            if (!speechRecognition) return;
+            if (isRecording) {
+                speechRecognition.stop();
+            } else {
+                speechRecognition.start();
+            }
+        }
+
+        /**
+         * Handles the selection of a file.
+         */
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result.split(',')[1];
+                uploadedFile = {
+                    base64,
+                    mimeType: file.type,
+                    name: file.name
+                };
+                updateFilePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /**
+         * Updates the UI to show the name of the uploaded file.
+         */
+        function updateFilePreview() {
+            if (uploadedFile) {
+                filePreviewName.textContent = uploadedFile.name;
+                filePreview.classList.remove('hidden');
+            } else {
+                filePreview.classList.add('hidden');
+                fileInput.value = null; // Reset file input
+            }
+        }
+
+        /**
+         * Removes the currently uploaded file.
+         */
+        function removeFile() {
+            uploadedFile = null;
+            updateFilePreview();
+        }
+        
+        /**
+         * Handles sending the message (from text input, voice, or file).
+         */
+        function handleSend() {
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt && !uploadedFile) {
+                return; // Don't send empty messages
+            }
+            
+            // 1. Display user message
+            displayMessage('user', prompt, uploadedFile);
+            
+            // 2. Prepare data for API
+            const userPrompt = prompt;
+            const fileData = uploadedFile;
+
+            // 3. Clear inputs
+            promptInput.value = '';
+            uploadedFile = null;
+            updateFilePreview();
+            
+            // 4. Show loading
+            setLoading(true);
+
+            // 5. Call API
+            callGeminiAPI(userPrompt, fileData);
+        }
+
+        /**
+         * Calls the Gemini API with the user's prompt and optional file.
+         */
+        async function callGeminiAPI(prompt, file) {
+            const parts = [];
+
+            // Add file part if it exists
+            if (file) {
+                // Only send image data if it's an image
+                if (file.mimeType.startsWith('image/')) {
+                     parts.push({
+                        inlineData: {
+                            mimeType: file.mimeType,
+                            data: file.base64
+                        }
+                    });
+                } else {
+                    // For non-images, just send a text placeholder
+                    prompt = (prompt || "") + `\n\n[User has uploaded a file: ${file.name}]`;
+                }
+            }
+            
+            // Add text prompt part
+            if (prompt) {
+                parts.push({ text: prompt });
+            }
+
+            // Add the new user message to history
+            chatHistory.push({
+                role: 'user',
+                parts: parts
+            });
+
+            const payload = {
+                contents: chatHistory,
+                // Add grounding tool if toggled
+                ...(searchToggle.checked && {
+                    tools: [{ "google_search": {} }]
+                })
+            };
+
+            try {
+                const response = await retryFetch(API_URL_TEXT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                const candidate = result.candidates?.[0];
+                if (!candidate || !candidate.content?.parts?.[0]?.text) {
+                    throw new Error("Invalid API response structure.");
+                }
+
+                const botText = candidate.content.parts[0].text;
+                
+                // Add bot response to history
+                chatHistory.push({
+                    role: 'model',
+                    parts: [{ text: botText }]
+                });
+
+                // Check for citations from Google Search
+                const sources = candidate.groundingMetadata?.groundingAttributions
+                    ?.map(attr => attr.web)
+                    .filter(web => web?.uri && web?.title);
+
+                // Display bot message
+                displayMessage('bot', botText, null, sources);
+                
+                // Play TTS if toggled
+                if (ttsToggle.checked) {
+                    await playTTS(botText);
+                }
+
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                displayMessage('bot', `Sorry, I encountered an error: ${error.message}`, null, null, true);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        /**
+         * Fetches and plays the Text-to-Speech audio for the given text.
+         */
+        async function playTTS(text) {
+            try {
+                const payload = {
+                    contents: [{
+                        parts: [{ text: `Speak clearly and naturally: ${text}` }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Kore" } // A pleasant, clear voice
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const response = await retryFetch(API_URL_TTS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('TTS API request failed');
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 24000;
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    ttsAudio.src = audioUrl;
+                    ttsAudio.play();
+                } else {
+                    throw new Error("No audio data in TTS response.");
+                }
+            } catch (error) {
+                console.error("Error playing TTS:", error);
+                // Don't show a chat error, just log to console
+            }
+        }
+
+        /**
+         * Displays a message in the chat window.
+         */
+        function displayMessage(role, text, file, sources, isError = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex mb-6 ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            let bubbleContent = '';
+
+            // Handle file display (only for user messages)
+            if (file) {
+                if (file.mimeType.startsWith('image/')) {
+                    const imgSrc = `data:${file.mimeType};base64,${file.base64}`;
+                    bubbleContent += `<img src="${imgSrc}" alt="${file.name}" class="rounded-lg mb-2 max-w-xs max-h-48 object-cover">`;
+                } else {
+                    bubbleContent += `<div class="bg-gray-800 p-2 rounded-md border border-gray-600 text-sm font-mono mb-2">
+                                        <i class="ph ph-file"></i> ${file.name}
+                                      </div>`;
+                }
+            }
+
+            // Handle text display
+            if (text) {
+                bubbleContent += `<div class="prose prose-sm max-w-none">${renderMarkdown(text)}</div>`;
+            }
+
+            // Handle sources display (only for bot messages)
+            if (sources && sources.length > 0) {
+                bubbleContent += `<div class="mt-3 pt-3 border-t border-gray-600">`;
+                bubbleContent += '<h4 class="font-semibold text-xs mb-1">Sources:</h4>';
+                bubbleContent += '<ol class="list-decimal list-inside text-xs">';
+                sources.forEach(source => {
+                    bubbleContent += `<li><a href="${source.uri}" target="_blank" class="text-blue-400 hover:underline">${source.title}</a></li>`;
+                });
+                bubbleContent += '</ol></div>';
+            }
+
+            let bubbleClasses = 'p-4 rounded-xl max-w-lg lg:max-w-xl shadow ';
+            if (role === 'user') {
+                bubbleClasses += 'bg-blue-600 text-white rounded-br-none';
+            } else if (isError) {
+                bubbleClasses += 'bg-red-900/50 border border-red-600 text-red-200 rounded-bl-none';
+            } else {
+                bubbleClasses += 'bg-gray-700 text-gray-100 rounded-bl-none';
+            }
+
+            msgDiv.innerHTML = `<div class="${bubbleClasses}">${bubbleContent}</div>`;
+            
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll
+        }
+        
+        /**
+         * Sets the loading state for the send button.
+         */
+        function setLoading(isLoading) {
+            if (isLoading) {
+                sendBtn.disabled = true;
+                sendIcon.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                sendBtn.disabled = false;
+                sendIcon.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Simple Markdown to HTML renderer.
+         */
+        function renderMarkdown(text) {
+            let html = text
+                // Escape HTML
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/__(.*?)__/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/_(.*?)_/g, '<em>$1</em>')
+                // Lists
+                .replace(/^\s*\*[ \t](.*)/gm, '<ul><li>$1</li></ul>') // Handle lists
+                .replace(/<\/ul>\n<ul>/g, '') // Combine adjacent lists
+                // Newlines
+                .replace(/\n/g, '<br>');
+                
+            return html;
+        }
+
+        // --- Utility Functions ---
+
+        /**
+         * Retries a fetch request with exponential backoff.
+         */
+        async function retryFetch(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok && response.status === 429) { // 429: Too Many Requests
+                        throw new Error('Rate limit exceeded');
+                    }
+                    return response; // Success
+                } catch (error) {
+                    if (i === retries - 1) throw error; // Last retry failed
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                }
+            }
+        }
+
+        /**
+         * Converts a base64 string to an ArrayBuffer.
+         */
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        /**
+         * Converts raw PCM16 audio data to a WAV file Blob.
+         */
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bytesPerSample = 2; // 16-bit
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            // RIFF header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            // 'fmt ' sub-chunk
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true); // Sub-chunk size
+            view.setUint16(20, 1, true); // Audio format (1 = PCM)
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bytesPerSample * 8, true); // Bits per sample
+            // 'data' sub-chunk
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            // Write PCM data
+            for (let i = 0; i < pcmData.length; i++) {
+                view.setInt16(44 + i * 2, pcmData[i], true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+    </script>
+</body>
+</html>
