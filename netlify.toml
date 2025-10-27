@@ -1,0 +1,19 @@
+This file gives you more control over your Netlify deployment.
+
+Cache Control Headers
+
+This tells Netlify's CDN how to cache your files.
+
+[[headers]]
+
+We want this rule to apply to all HTML files.
+
+for = "/*.html"
+[headers.values]
+# This is the "cache-busting" part.
+# "public" - allows it to be cached by browsers/CDNs.
+# "max-age=0" - tells the browser/CDN it's "stale" immediately.
+# "must-revalidate" - tells the browser/CDN it MUST check with the server
+#                     (Netlify) for a new version before using its
+#                     cached copy. This is what we want.
+Cache-Control = "public, max-age=0, must-revalidate"
