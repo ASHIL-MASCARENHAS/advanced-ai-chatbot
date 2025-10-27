@@ -7,7 +7,7 @@ This is a single-page web application for an advanced AI chatbot powered by the 
 You can try the live application here:
 http://advanced-ai-chatbot.builtbyashil.site/
 
-## ✨ Features
+## ✨ Key Features
 
 - **Multimodal Chat**: Send text prompts or upload images for analysis.
 
