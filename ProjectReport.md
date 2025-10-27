@@ -1,31 +1,36 @@
-1. Project Objective
+# Advanced AI Chatbot
 
-The primary objective was to create a modern, feature-rich chatbot web application. The goal was to move beyond simple text-only bots and incorporate advanced AI capabilities such as multimodal input (images), voice I/O (STT/TTS), and grounded, real-time web search.
+This is a single-page web application for an advanced AI chatbot powered by the Gemini API. It features a modern, dark-themed, responsive interface and supports text, image, and voice interactions.
 
-2. Features Implemented
+## 🚀 Live Demo
 
-Core Chat: A responsive, dark-theme UI for conversations.
+You can try the live application here:
+http://advanced-ai-chatbot.builtbyashil.site/
 
-Multimodality: Users can upload images, and the AI (Gemini) will analyze the image as part of the prompt.
+## ✨ Features
 
-Voice-to-Text (STT): Leverages the browser's Web Speech API to transcribe user voice into text.
+- **Multimodal Chat**: Send text prompts or upload images for analysis.
 
-Text-to-Speech (TTS): Uses the Gemini TTS API to convert the bot's text response into audible speech.
+- **Voice-to-Text (STT)**: Use your microphone to dictate prompts.
 
-Google Search Grounding: A toggle allows the bot to access Google Search for up-to-date information, providing sources and citations.
+- **Text-to-Speech (TTS)**: Enable voice responses to have the bot speak its answers.
 
-Secure API Management: The application is designed to load the secret API key from an external config.js file, which is explicitly ignored by Git to prevent it from being exposed in a public repository.
+- **Grounded Responses**: Toggle "Enable Google Search" to get real-time, verifiable answers with sources.
 
-3. Technologies Used
+- **File Handling**: Attach images for visual Q&A.
 
-Frontend: HTML, Tailwind CSS
+- **Secure API Key**: Loads API key from an ignored config.js file to keep your key private in a public repository.
 
-Logic: JavaScript (ES6+)
+- **Dark Theme**: Sleek, modern dark mode interface.
 
-APIs:
+## 💻 Technologies Used
 
-Gemini API (gemini-2.5-flash-preview-09-2025): For text generation and image understanding.
+- HTML5
 
-Gemini TTS API (gemini-2.5-flash-preview-tts): For audio generation.
+- Tailwind CSS
 
-Web Speech API (Browser): For speech recognition.
+- JavaScript (ES6+)
+
+- Gemini API (for text generation, image understanding, TTS, and search grounding)
+
+- Browser Web Speech API (for speech-to-text)
