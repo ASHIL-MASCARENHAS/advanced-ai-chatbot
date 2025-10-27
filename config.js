@@ -1,0 +1,1 @@
+const GEMINI_API_KEY_LOCAL = "AIzaSyBm-2GYNWlkcw48TWWUpbdbZXwUWpBxNd4";
