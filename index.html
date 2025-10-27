@@ -315,16 +315,19 @@
             // 1. Try to get API key from Netlify's injected meta tag
             const metaTag = document.querySelector('meta[name="gemini-api-key"]');
             
-            if (metaTag && metaTag.content && metaTag.content !== "${GEMINI_API_KEY}") {
+            // 2. Fallback to local config.js (for localhost)
+            // We check for 'config.js' variable *first*
+            // Note: The global `GEMINI_API_KEY` is from config.js, loaded via the smart script in <head>
+            if (typeof GEMINI_API_KEY_LOCAL !== 'undefined') {
+                GEMINI_API_KEY = GEMINI_API_KEY_LOCAL;
+                console.log("API Key loaded from local config.js.");
+            }
+            // 3. If not local, check the meta tag
+            else if (metaTag && metaTag.content && metaTag.content !== "${GEMINI_API_KEY}") {
                 GEMINI_API_KEY = metaTag.content;
                 console.log("API Key loaded from meta tag.");
             } 
-            // 2. If not found, fall back to local config.js (for localhost)
-            else if (typeof GEMINI_API_KEY_LOCAL !== 'undefined') {
-                GEMINI_API_KEY = GEMINI_API_KEY_LOCAL;
-                console.log("API Key loaded from local config.js.");
-            } 
-            // 3. If still not found, show an error.
+            // 4. If still not found, show a specific error.
             else {
                 let errorHtml = "";
                 // This logic creates a more specific error message.
@@ -720,7 +723,7 @@
         function queueTTS(text) {
             // Split text into smaller chunks for better API response time
             // Simple split by sentences.
-            const sentences = text.split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s/);
+            const sentences = text.split(/(?<!\w\w.)(?<![A-Z][a-z].)(?<=\.|\?|!)\s/);
             
             for (const sentence of sentences) {
                 if (sentence.trim().length > 0) {
@@ -895,7 +898,19 @@
         removeFileBtn.addEventListener('click', clearFileInput);
         
         // --- Initialization ---
-        initializeApp();
+        // We use a different variable name for local dev to avoid conflicts
+        // and make the logic in initializeApp() cleaner.
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+          // This script tag is added by the logic in the <head>
+          // We wait for it to load.
+          document.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure config.js has loaded and defined GEMINI_API_KEY_LOCAL
+            setTimeout(initializeApp, 100);
+          });
+        } else {
+          // On deploy, just run it right away.
+          initializeApp();
+        }
 
     </script>
 </body>
