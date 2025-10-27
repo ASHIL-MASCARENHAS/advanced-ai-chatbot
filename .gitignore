@@ -1,7 +1,7 @@
 ## This file tells Git which files to ignore.
 
 # Ignore the file containing the secret API key.
-# config.js
+config.js
 
 # Ignore system files
 .DS_Store
