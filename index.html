@@ -195,8 +195,10 @@
             
             // 1. Try to get key from injected meta tag (for Netlify/Deployment)
             const metaTag = document.querySelector('meta[name="gemini-api-key"]');
-            if (metaTag && metaTag.content && metaTag.content !== "${GEMINI_API_KEY}") {
-                API_KEY = metaTag.content;
+            let metaTagContent = metaTag ? metaTag.content : null;
+
+            if (metaTag && metaTagContent && metaTagContent !== "${GEMINI_API_KEY}") {
+                API_KEY = metaTagContent;
                 console.log("Loaded API key from meta tag.");
             } 
             // 2. Fallback: Try to get key from config.js (for localhost)
@@ -214,14 +216,16 @@
                 fileInput.disabled = true;
 
                 let errorMsg = 'Error: API Key not configured. ';
-                if (metaTag && metaTag.content === "${GEMINI_API_KEY}") {
-                    errorMsg += 'The Netlify Environment Variable (GEMINI_API_KEY) is not set. Please set it and redeploy.';
+                
+                // --- NEW DETAILED ERROR MESSAGES ---
+                if (metaTag && metaTagContent === "${GEMINI_API_KEY}") {
+                    errorMsg += '<b>Snippet injection is working, but Environment Variable is not.</b><br>Please check two things in Netlify:<br>1. The variable <b>Key</b> is spelled *exactly* `GEMINI_API_KEY` (with an underscore).<br>2. You clicked "Clear cache and deploy site" *after* saving the variable.';
                 } else if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
-                    errorMsg += 'Please add your API key to config.js for local testing.';
-                } else if (metaTag) {
-                    errorMsg += 'Meta tag was found but empty. Check Netlify Environment Variable.';
+                    errorMsg += 'Please add your API key to `config.js` for local testing.';
+                } else if (!metaTag) {
+                    errorMsg += 'Snippet Injection failed. Could not find `<meta name="gemini-api-key">`. Please check your snippet in Netlify.';
                 } else {
-                    errorMsg += 'Please check deployment guide or config.example.js.';
+                    errorMsg += `An unknown error occurred. Meta tag content was: "${metaTagContent}". Check config.example.js.`;
                 }
                 
                 promptInput.placeholder = "API Key not configured.";
