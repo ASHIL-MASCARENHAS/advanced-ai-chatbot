@@ -5,7 +5,7 @@ This is a single-page web application for an advanced AI chatbot powered by the 
 ## 🚀 Live Demo
 
 You can try the live application here:
-http://advancedaichatbot.builtbyashil.site/
+https://advancedaichatbot.builtbyashil.site/
 
 ## ✨ Key Features
 
